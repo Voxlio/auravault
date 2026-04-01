@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aura Vault | Secure Premium Storage</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0a0c;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --accent-gold: #d4af37;
+            --accent-blue: #00d2ff;
+            --text-main: #f0f0f0;
+            --text-dim: #a0a0a0;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --error-red: #ff4b4b;
+            --success-green: #00e676;
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            background: radial-gradient(circle at top right, #1a1a2e, #0a0a0c 50%),
+                        radial-gradient(circle at bottom left, #0d1b2a, #0a0a0c 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 210, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* --- Lock Screen --- */
+        #lock-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(20px);
+            transition: var(--transition);
+        }
+
+        #lock-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.1);
+        }
+
+        .logo-container {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent-blue), #0072ff);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3);
+        }
+
+        .auth-card {
+            width: 90%;
+            max-width: 380px;
+            padding: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.1);
+        }
+
+        .btn-premium {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), #0072ff);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.4);
+        }
+
+        /* --- Main Layout --- */
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .app-container.visible {
+            opacity: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+            gap: 15px;
+        }
+
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .search-input {
+            padding-left: 45px;
+            background: var(--bg-card);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        /* --- Grid & Cards --- */
+        .vault-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding-bottom: 100px;
+        }
+
+        .vault-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            animation: fadeInScale 0.5s ease backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vault-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-5px);
+            border-color: rgba(0, 210, 255, 0.3);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .pin-icon {
+            color: var(--accent-gold);
+            opacity: 0.8;
+        }
+
+        .card-preview {
+            font-size: 14px;
+            color: var(--text-dim);
+            filter: blur(4px);
+            user-select: none;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .card-footer {
+            margin-top: 20px;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- Floating Button --- */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, var(--accent-blue), #0072ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 210, 255, 0.4);
+            transition: var(--transition);
+            z-index: 100;
+            animation: pulseGlow 2s infinite;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            background: #151518;
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 32px;
+            transform: scale(0.9) translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 15px;
+            min-height: 150px;
+            resize: none;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-dim);
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+        /* --- Detail Specific --- */
+        .content-area {
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .content-hidden {
+            filter: blur(12px);
+            user-select: none;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .small-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+
+        .danger-btn {
+            border-color: rgba(255, 75, 75, 0.3);
+            color: var(--error-red);
+        }
+
+        .danger-btn:hover {
+            background: rgba(255, 75, 75, 0.1);
+            color: var(--error-red);
+        }
+
+        .warning-footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .sync-status {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-dim);
+        }
+
+        .sync-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .sync-dot.online { background: var(--success-green); box-shadow: 0 0 5px var(--success-green); }
+
+        /* --- Utilities --- */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(255, 255, 255, 0.95);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 3000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            header { flex-wrap: wrap; }
+            .search-container { order: 3; width: 100%; margin: 0; }
+            .modal-actions { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Lock Screen -->
+    <div id="lock-screen">
+        <div class="logo-container">
+            <div class="logo-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h1 style="font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Aura Vault</h1>
+            <p style="color: var(--text-dim); margin-top: 5px;">Your encrypted digital sanctuary</p>
+        </div>
+        <div class="auth-card" id="auth-form">
+            <div class="input-group">
+                <input type="password" id="master-password" placeholder="Enter Master Password" autofocus>
+            </div>
+            <button class="btn-premium" id="unlock-btn">Unlock Vault</button>
+            <p id="auth-error" style="color: var(--error-red); font-size: 13px; margin-top: 15px; display: none;">Invalid Master Password</p>
+            <div style="margin-top: 20px; font-size: 12px; color: var(--text-dim);">
+                Cloud Sync Enabled • AES-256 Encrypted
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="app-container" id="main-content">
+        <header>
+            <div style="display: flex; align-items: center; gap: 12px; min-width: max-content;">
+                <div class="logo-icon" style="width: 36px; height: 36px; margin: 0; border-radius: 10px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div>
+                    <h2 style="font-weight: 700; font-size: 18px;">Aura Vault</h2>
+                    <div class="sync-status">
+                        <span class="sync-dot" id="cloud-indicator"></span>
+                        <span id="cloud-text">Checking Cloud...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="search-container">
+                <span class="search-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <input type="text" id="search-bar" class="search-input" placeholder="Search entries...">
+            </div>
+            <button class="btn-outline" id="lock-btn" style="padding: 8px 16px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+                Lock
+            </button>
+        </header>
+
+        <div class="vault-grid" id="vault-grid">
+            <!-- Cards injected here -->
+        </div>
+
+        <div class="warning-footer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-bottom: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Zero-Knowledge: Your master password never leaves this device. 
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <div class="fab" id="add-fab">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </div>
+
+    <!-- Add Entry Modal -->
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New Entry</h3>
+                <button class="btn-outline" id="close-add" style="border: none; padding: 5px;">✕</button>
+            </div>
+            <input type="text" id="entry-title" placeholder="Title (e.g., Banking Login)" style="margin-bottom: 15px;">
+            <textarea id="entry-content" placeholder="Sensitive content..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-outline" id="cancel-add">Cancel</button>
+                <button class="btn-premium" id="save-entry">Save & Sync</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail View Modal -->
+    <div class="modal-overlay" id="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="view-title">Entry Details</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-outline" id="pin-entry-btn" style="border: none; padding: 5px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M16.5 9.4 7.55 4.24"></path></svg>
+                    </button>
+                    <button class="btn-outline" id="close-detail" style="border: none; padding: 5px;">✕</button>
+                </div>
+            </div>
+            <div class="action-row">
+                <button class="btn-outline small-btn" id="reveal-btn">👁️ Reveal</button>
+                <button class="btn-outline small-btn" id="copy-btn">📋 Copy</button>
+                <button class="btn-outline small-btn danger-btn" id="delete-btn" style="margin-left: auto;">🗑️ Delete</button>
+            </div>
+            <div class="content-area content-hidden" id="view-content">
+                <!-- Content injected here -->
+            </div>
+            <div id="view-meta" style="font-size: 11px; color: var(--text-dim);"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Action completed</div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCv6-R-2rvAAXOZNTkq5G1eMlUvCf0HU7w",
+            authDomain: "auravault-d0300.firebaseapp.com",
+            projectId: "auravault-d0300",
+            storageBucket: "auravault-d0300.firebasestorage.app",
+            messagingSenderId: "725634068550",
+            appId: "1:725634068550:web:b2344309e66f6aa3a11a47",
+            measurementId: "G-K2QGBGLQW2"
+        };
+
+        // Determine correct App ID for namespacing
+        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'aura-vault-v1';
+        // Check for custom token provided by environment
+        const initialToken = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token && __initial_auth_token !== "undefined") ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        /**
+         * SECURITY CORE: AES-GCM Encryption
+         */
+        let vaultKey = null;
+        let salt = null;
+        let entries = [];
+        let currentEditingId = null;
+        let autoLockTimer = null;
+        let currentUser = null;
+
+        const SALT_KEY = 'aura_vault_salt_v2';
+
+        // --- Helper Functions ---
+        const showToast = (msg) => {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        };
+
+        const formatTime = (ts) => {
+            return new Date(ts).toLocaleDateString('en-US', { 
+                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+            });
+        };
+
+        const updateCloudStatus = (isOnline) => {
+            const ind = document.getElementById('cloud-indicator');
+            const txt = document.getElementById('cloud-text');
+            if (isOnline) {
+                ind.classList.add('online');
+                txt.textContent = "Cloud Synced";
+            } else {
+                ind.classList.remove('online');
+                txt.textContent = "Offline Mode";
+            }
+        };
+
+        // --- Cryptography ---
+        async function deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                false,
+                ["encrypt", "decrypt"]
+            );
+        }
+
+        async function encrypt(text, key) {
+            const enc = new TextEncoder();
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const ciphertext = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                enc.encode(text)
+            );
+            return {
+                ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+                iv: btoa(String.fromCharCode(...iv))
+            };
+        }
+
+        async function decrypt(encryptedObj, key) {
+            try {
+                const iv = new Uint8Array(atob(encryptedObj.iv).split("").map(c => c.charCodeAt(0)));
+                const ciphertext = new Uint8Array(atob(encryptedObj.ciphertext).split("").map(c => c.charCodeAt(0)));
+                const decrypted = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    key,
+                    ciphertext
+                );
+                return new TextDecoder().decode(decrypted);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // --- Firebase Auth & Sync Logic ---
+        async function initAuth() {
+            try {
+                if (initialToken) {
+                    await signInWithCustomToken(auth, initialToken);
+                } else {
+                    // Note: Ensure "Anonymous" provider is enabled in Firebase Console > Authentication > Sign-in method
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Auth initialization failed", e);
+                updateCloudStatus(false);
+                // If it fails with config error, it's often due to missing Anonymous provider or malformed token
+                if (e.code === 'auth/configuration-not-found') {
+                    console.warn("Firebase Auth: Configuration not found. Please ensure Anonymous Sign-in is enabled in your Firebase Console.");
+                }
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                if (user) {
+                    updateCloudStatus(true);
+                    if (vaultKey) setupRealtimeSync();
+                } else {
+                    updateCloudStatus(false);
+                }
+            });
+        }
+
+        function setupRealtimeSync() {
+            if (!currentUser || !vaultKey) return;
+
+            const q = collection(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'vault');
+            onSnapshot(q, (snapshot) => {
+                const cloudEntries = [];
+                snapshot.forEach(doc => {
+                    cloudEntries.push({ id: doc.id, ...doc.data() });
+                });
+                entries = cloudEntries;
+                renderEntries();
+            }, (err) => {
+                console.error("Sync Error:", err);
+                updateCloudStatus(false);
+            });
+        }
+
+        // --- App Actions ---
+        async function unlock(password) {
+            try {
+                let storedSalt = localStorage.getItem(SALT_KEY);
+                if (!storedSalt && currentUser) {
+                    const saltDoc = await getDoc(doc(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'config', 'security'));
+                    if (saltDoc.exists()) storedSalt = saltDoc.data().salt;
+                }
+
+                if (!storedSalt) {
+                    const newSalt = window.crypto.getRandomValues(new Uint8Array(16));
+                    storedSalt = btoa(String.fromCharCode(...newSalt));
+                    localStorage.setItem(SALT_KEY, storedSalt);
+                    if (currentUser) {
+                        await setDoc(doc(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'config', 'security'), { salt: storedSalt });
+                    }
+                }
+
+                salt = new Uint8Array(atob(storedSalt).split("").map(c => c.charCodeAt(0)));
+                const key = await deriveKey(password, salt);
+                
+                vaultKey = key;
+                setupRealtimeSync();
+                
+                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('main-content').classList.add('visible');
+                resetAutoLock();
+                return true;
+            } catch (e) {
+                console.error("Unlock failed", e);
+                return false;
+            }
+        }
+
+        function lock() {
+            vaultKey = null;
+            entries = [];
+            document.getElementById('lock-screen').classList.remove('hidden');
+            document.getElementById('main-content').classList.remove('visible');
+            document.getElementById('master-password').value = '';
+            document.getElementById('vault-grid').innerHTML = '';
+        }
+
+        function resetAutoLock() {
+            if (autoLockTimer) clearTimeout(autoLockTimer);
+            autoLockTimer = setTimeout(() => {
+                if (vaultKey) lock();
+            }, 300000); 
+        }
+
+        async function saveEntry() {
+            if (!currentUser || !vaultKey) return;
+            const titleInput = document.getElementById('entry-title');
+            const contentInput = document.getElementById('entry-content');
+            const title = titleInput.value.trim();
+            const content = contentInput.value.trim();
+            
+            if (!title || !content) return;
+
+            const encryptedContent = await encrypt(content, vaultKey);
+            const entryId = Date.now().toString();
+            
+            const newEntry = {
+                title: title,
+                content: encryptedContent,
+                pinned: false,
+                updated: Date.now()
+            };
+
+            await setDoc(doc(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'vault', entryId), newEntry);
+            
+            closeModals();
+            showToast("Cloud Synced & Saved");
+            resetAutoLock();
+        }
+
+        async function renderEntries(filter = "") {
+            const grid = document.getElementById('vault-grid');
+            grid.innerHTML = '';
+
+            const filtered = entries.filter(e => e.title.toLowerCase().includes(filter.toLowerCase()));
+            filtered.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
+
+            filtered.forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'vault-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-title">${escapeHtml(entry.title)}</span>
+                        ${entry.pinned ? '<span class="pin-icon">📌</span>' : ''}
+                    </div>
+                    <div class="card-preview">Encrypted Block</div>
+                    <div class="card-footer">
+                        <span>${formatTime(entry.updated)}</span>
+                        <span>☁️</span>
+                    </div>
+                `;
+                card.onclick = () => openDetail(entry.id);
+                grid.appendChild(card);
+            });
+        }
+
+        async function openDetail(id) {
+            const entry = entries.find(e => e.id === id);
+            if (!entry) return;
+
+            currentEditingId = id;
+            document.getElementById('view-title').textContent = entry.title;
+            document.getElementById('view-content').textContent = "••••••••••••••••";
+            document.getElementById('view-content').classList.add('content-hidden');
+            document.getElementById('view-meta').textContent = `ID: ${entry.id} | Last Sync: ${formatTime(entry.updated)}`;
+            document.getElementById('pin-entry-btn').style.color = entry.pinned ? 'var(--accent-gold)' : 'var(--text-dim)';
+            
+            document.getElementById('detail-modal').classList.add('active');
+            document.getElementById('reveal-btn').textContent = "👁️ Reveal";
+            resetAutoLock();
+        }
+
+        async function toggleReveal() {
+            const btn = document.getElementById('reveal-btn');
+            const box = document.getElementById('view-content');
+            const entry = entries.find(e => e.id === currentEditingId);
+
+            if (box.classList.contains('content-hidden')) {
+                const plain = await decrypt(entry.content, vaultKey);
+                if (plain === null) {
+                    showToast("Decryption Error");
+                    return;
+                }
+                box.textContent = plain;
+                box.classList.remove('content-hidden');
+                btn.textContent = "🙈 Hide";
+            } else {
+                box.textContent = "••••••••••••••••";
+                box.classList.add('content-hidden');
+                btn.textContent = "👁️ Reveal";
+            }
+            resetAutoLock();
+        }
+
+        async function copyContent() {
+            const entry = entries.find(e => e.id === currentEditingId);
+            const plain = await decrypt(entry.content, vaultKey);
+            const el = document.createElement('textarea');
+            el.value = plain;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            showToast("Copied Securely");
+        }
+
+        async function deleteEntry() {
+            if (!confirm("Remove from cloud permanently?")) return;
+            await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'vault', currentEditingId));
+            closeModals();
+            showToast("Deleted from Cloud");
+        }
+
+        async function togglePin() {
+            const entry = entries.find(e => e.id === currentEditingId);
+            if (entry) {
+                await updateDoc(doc(db, 'artifacts', currentAppId, 'users', currentUser.uid, 'vault', currentEditingId), {
+                    pinned: !entry.pinned
+                });
+            }
+        }
+
+        function closeModals() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+            document.getElementById('entry-title').value = '';
+            document.getElementById('entry-content').value = '';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('unlock-btn').onclick = async () => {
+            const pass = document.getElementById('master-password').value;
+            const success = await unlock(pass);
+            if (!success) {
+                const card = document.querySelector('.auth-card');
+                card.style.animation = 'shake 0.4s';
+                document.getElementById('auth-error').style.display = 'block';
+                setTimeout(() => card.style.animation = '', 400);
+            }
+        };
+
+        document.getElementById('master-password').onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('unlock-btn').click(); };
+        document.getElementById('add-fab').onclick = () => document.getElementById('add-modal').classList.add('active');
+        document.getElementById('close-add').onclick = closeModals;
+        document.getElementById('cancel-add').onclick = closeModals;
+        document.getElementById('close-detail').onclick = closeModals;
+        document.getElementById('save-entry').onclick = saveEntry;
+        document.getElementById('reveal-btn').onclick = toggleReveal;
+        document.getElementById('copy-btn').onclick = copyContent;
+        document.getElementById('delete-btn').onclick = deleteEntry;
+        document.getElementById('pin-entry-btn').onclick = togglePin;
+        document.getElementById('lock-btn').onclick = lock;
+        document.getElementById('search-bar').oninput = (e) => renderEntries(e.target.value);
+
+        window.onclick = resetAutoLock;
+        window.onkeypress = resetAutoLock;
+
+        window.onload = () => {
+            initAuth();
+        };
+
+    </script>
+</body>
+</html>
