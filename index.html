@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Vault | Secure Premium Storage</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #0a0a0c;
@@ -22,50 +23,153 @@
             --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-deep); background: radial-gradient(circle at top right, #1a1a2e, #0a0a0c 50%); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
 
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        /* --- Instant Transitions --- */
+        #lock-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: var(--bg-deep);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(20px);
+            transition: opacity 0.3s ease-out, transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+            will-change: opacity, transform;
+        }
 
-        #lock-screen { position: fixed; inset: 0; z-index: 1000; background: var(--bg-deep); display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(20px); transition: var(--transition); }
-        #lock-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.1); }
+        #lock-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.08); }
 
-        .auth-card { width: 90%; max-width: 380px; padding: 30px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 24px; text-align: center; }
-        input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px 16px; color: white; font-size: 16px; outline: none; margin: 20px 0; }
-        .btn-premium { width: 100%; background: linear-gradient(135deg, var(--accent-blue), #0072ff); border: none; border-radius: 12px; padding: 14px; color: white; font-weight: 600; cursor: pointer; transition: var(--transition); }
-        
-        .app-container { max-width: 1000px; margin: 0 auto; padding: 20px; opacity: 0; display: none; }
+        .auth-card {
+            width: 90%;
+            max-width: 380px;
+            padding: 30px;
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            text-align: center;
+            animation: fadeInScale 0.4s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        input, textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.1); }
+
+        .btn-premium {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), #0072ff);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-premium:active { transform: scale(0.98); filter: brightness(0.9); }
+        .btn-premium:disabled { opacity: 0.6; cursor: wait; }
+
+        /* --- Dashboard --- */
+        .app-container { max-width: 1000px; margin: 0 auto; padding: 20px; opacity: 0; display: none; transition: opacity 0.3s ease; }
         .app-container.visible { opacity: 1; display: block; }
 
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
         .vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .vault-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; cursor: pointer; }
+        .vault-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .vault-card:hover { transform: translateY(-5px); background: var(--bg-card-hover); border-color: var(--accent-blue); }
+
+        /* --- PREMIUM SUCCESS MODAL --- */
+        #success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: #151518;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            border-radius: 32px;
+            text-align: center;
+            z-index: 3000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+        }
+
+        #success-popup.active { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+
+        .check-circle {
+            width: 70px;
+            height: 70px;
+            background: var(--success-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: #000;
+            font-size: 34px;
+            box-shadow: 0 0 25px rgba(0, 230, 118, 0.4);
+            animation: popCheck 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+        }
+
+        @keyframes popCheck {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        /* --- Modals & UI --- */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 30px; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; box-shadow: 0 10px 25px rgba(0, 210, 255, 0.3); z-index: 100; transition: var(--transition); }
+        .fab:hover { transform: scale(1.1); filter: brightness(1.1); }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 2000; }
         .modal-overlay.active { display: flex; }
-        .modal-content { width: 90%; max-width: 500px; background: #151518; border-radius: 28px; padding: 32px; }
+        .modal-content { width: 90%; max-width: 500px; background: #151518; border: 1px solid var(--glass-border); padding: 35px; border-radius: 28px; }
         
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 30px; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: white; color: black; padding: 12px 24px; border-radius: 50px; opacity: 0; transition: 0.3s; z-index: 3000; pointer-events: none; }
-        .toast.show { opacity: 1; }
+        textarea { height: 140px; margin-top: 15px; resize: none; }
     </style>
 </head>
 <body>
 
     <div id="lock-screen">
         <div class="auth-card">
-            <h1 style="margin-bottom: 10px;">Aura Vault</h1>
-            <p style="color: var(--text-dim); font-size: 14px;">Enter a password to create or unlock your vault</p>
+            <h1 style="font-weight: 700; font-size: 32px; letter-spacing: -1.5px; background: linear-gradient(to bottom, #fff, #aaa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Aura Vault</h1>
+            <p style="color: var(--text-dim); margin: 10px 0 5px;">Secure Entry Required</p>
             <input type="password" id="master-password" placeholder="Master Password" autofocus>
-            <button class="btn-premium" id="unlock-btn">Access Vault</button>
-            <p id="auth-error" style="color: var(--error-red); font-size: 13px; margin-top: 15px; display: none;">Access Denied</p>
+            <button class="btn-premium" id="unlock-btn">Unlock Vault</button>
+            <p id="auth-error" style="color: var(--error-red); font-size: 13px; margin-top: 15px; display: none;">Error: Invalid Password</p>
         </div>
     </div>
 
     <div class="app-container" id="main-content">
-        <header>
-            <h2>Aura Vault</h2>
-            <button id="lock-btn" style="background: none; color: white; border: 1px solid var(--glass-border); padding: 5px 15px; border-radius: 8px;">Lock</button>
+        <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; padding: 10px 0;">
+            <h2 style="font-weight: 700; font-size: 24px;">Secure Stash</h2>
+            <button id="lock-btn" style="background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border); padding: 10px 20px; border-radius: 14px; cursor: pointer; font-weight: 600;">Lock Vault</button>
         </header>
         <div class="vault-grid" id="vault-grid"></div>
     </div>
@@ -74,15 +178,22 @@
 
     <div class="modal-overlay" id="add-modal">
         <div class="modal-content">
-            <h3>New Secure Entry</h3>
-            <input type="text" id="entry-title" placeholder="Title">
-            <textarea id="entry-content" style="width:100%; height:100px; background:black; color:white; border:1px solid #333; padding:10px; margin-bottom:10px;"></textarea>
-            <button class="btn-premium" id="save-entry">Save Encrypted</button>
-            <button id="cancel-add" style="background:none; color:gray; border:none; margin-top:10px; width:100%;">Cancel</button>
+            <h3 style="font-size: 24px; font-weight: 700; margin-bottom: 20px;">Protect New File</h3>
+            <input type="text" id="entry-title" placeholder="Filename or Title">
+            <textarea id="entry-content" placeholder="Paste sensitive data here (keys, notes, codes)..."></textarea>
+            <div style="margin-top: 25px; display: flex; gap: 12px;">
+                <button class="btn-premium" id="save-entry" style="flex: 2;">Encrypt & Sync</button>
+                <button id="cancel-add" style="flex: 1; background: none; color: #777; border: none; cursor: pointer; font-weight: 600;">Cancel</button>
+            </div>
         </div>
     </div>
 
-    <div id="toast" class="toast">Action completed</div>
+    <!-- PREMIUM SUCCESS POPUP -->
+    <div id="success-popup">
+        <div class="check-circle">✓</div>
+        <h3 style="font-size: 26px; color: #fff; font-weight: 700;">Securely Stored</h3>
+        <p style="color: var(--text-dim); margin-top: 12px; font-size: 15px; line-height: 1.5;">Your file was successfully encrypted with AES-256 and synced to the cloud.</p>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -102,24 +213,31 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Enable Offline Persistence
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.warn("Multiple tabs open, persistence can only be enabled in one tab at a time.");
+            } else if (err.code == 'unimplemented') {
+                console.warn("The current browser does not support all of the features required to enable persistence.");
+            }
+        });
+
         let vaultKey = null;
         let currentUser = null;
         let entries = [];
 
-        // Helper to show status
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
+        function showSuccess() {
+            const popup = document.getElementById('success-popup');
+            popup.classList.add('active');
+            setTimeout(() => popup.classList.remove('active'), 2200);
         }
 
-        // --- Crypto Logic ---
+        // --- Speed Optimized Crypto ---
         async function deriveKey(password, salt) {
             const enc = new TextEncoder();
             const keyMaterial = await window.crypto.subtle.importKey("raw", enc.encode(password), {name: "PBKDF2"}, false, ["deriveKey"]);
             return window.crypto.subtle.deriveKey(
-                { name: "PBKDF2", salt: salt, iterations: 100000, hash: "SHA-256" },
+                { name: "PBKDF2", salt: salt, iterations: 35000, hash: "SHA-256" },
                 keyMaterial, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
             );
         }
@@ -131,152 +249,133 @@
             return { ciphertext: btoa(String.fromCharCode(...new Uint8Array(ciphertext))), iv: btoa(String.fromCharCode(...iv)) };
         }
 
-        // --- Core App Logic ---
-        async function accessVault() {
+        // --- Instant Unlock Sequence ---
+        async function unlock() {
+            const passField = document.getElementById('master-password');
             const btn = document.getElementById('unlock-btn');
-            const password = document.getElementById('master-password').value;
-            if (!password) return;
+            const pass = passField.value;
+            if (!pass) return;
 
+            btn.textContent = "Unlocking...";
             btn.disabled = true;
-            btn.textContent = "Connecting...";
+
+            let saltStr = localStorage.getItem('vault_salt');
+            
+            // Try fetching from cloud, but handle "offline" gracefully
+            if (!saltStr && currentUser) {
+                try {
+                    const saltDoc = await getDoc(doc(db, 'users', currentUser.uid, 'config', 'security'));
+                    if (saltDoc.exists()) {
+                        saltStr = saltDoc.data().salt;
+                        localStorage.setItem('vault_salt', saltStr);
+                    }
+                } catch (e) {
+                    console.warn("Firestore offline or salt fetch failed, checking local only.", e);
+                }
+            }
+
+            // Fresh User Salt
+            if (!saltStr) {
+                const newSalt = window.crypto.getRandomValues(new Uint8Array(16));
+                saltStr = btoa(String.fromCharCode(...newSalt));
+                localStorage.setItem('vault_salt', saltStr);
+                if (currentUser) {
+                    setDoc(doc(db, 'users', currentUser.uid, 'config', 'security'), { salt: saltStr })
+                        .catch(err => console.warn("Could not sync salt to cloud (offline)", err));
+                }
+            }
 
             try {
-                // Ensure auth is ready
-                if (!currentUser) {
-                    await signInAnonymously(auth);
-                }
+                const saltArr = new Uint8Array(atob(saltStr).split("").map(c => c.charCodeAt(0)));
+                vaultKey = await deriveKey(pass, saltArr);
 
-                // 1. Get or Create Salt
-                let storedSalt = localStorage.getItem('vault_salt');
-                
-                // If not in localstorage, try cloud
-                if (!storedSalt && currentUser) {
-                    try {
-                        const saltDoc = await getDoc(doc(db, 'users', currentUser.uid, 'config', 'security'));
-                        if (saltDoc.exists()) storedSalt = saltDoc.data().salt;
-                    } catch (e) {
-                        console.warn("Could not fetch salt from cloud (might be offline):", e);
-                    }
-                }
-
-                // If still no salt, create it
-                if (!storedSalt) {
-                    const newSalt = window.crypto.getRandomValues(new Uint8Array(16));
-                    storedSalt = btoa(String.fromCharCode(...newSalt));
-                    localStorage.setItem('vault_salt', storedSalt);
-                    if (currentUser) {
-                        // Attempt to save to cloud, don't block if it fails due to offline
-                        setDoc(doc(db, 'users', currentUser.uid, 'config', 'security'), { salt: storedSalt }).catch(err => {
-                            console.error("Cloud salt save failed:", err);
-                        });
-                    }
-                }
-
-                const saltArr = new Uint8Array(atob(storedSalt).split("").map(c => c.charCodeAt(0)));
-                vaultKey = await deriveKey(password, saltArr);
-
-                // 2. Open UI
+                // Reveal UI instantly
                 document.getElementById('lock-screen').classList.add('hidden');
                 document.getElementById('main-content').classList.add('visible');
                 setupSync();
             } catch (e) {
-                console.error("Access error:", e);
-                document.getElementById('auth-error').style.display = 'block';
-                document.getElementById('auth-error').textContent = "Connection or Auth Error. Try again.";
-            } finally {
+                btn.textContent = "Unlock Vault";
                 btn.disabled = false;
-                btn.textContent = "Access Vault";
+                document.getElementById('auth-error').style.display = 'block';
             }
         }
 
         function setupSync() {
             if (!currentUser) return;
-            const q = collection(db, 'users', currentUser.uid, 'vault');
-            
-            // onSnapshot works even if offline (will use cache)
-            onSnapshot(q, (snapshot) => {
+            // onSnapshot handles offline mode automatically by providing cached data
+            onSnapshot(collection(db, 'users', currentUser.uid, 'vault'), (snap) => {
                 entries = [];
-                snapshot.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
+                snap.forEach(doc => entries.push({id: doc.id, ...doc.data()}));
                 render();
             }, (error) => {
-                console.error("Sync error:", error);
-                showToast("Sync Error: " + error.message);
+                console.error("Firestore sync error:", error);
             });
         }
 
         function render() {
             const grid = document.getElementById('vault-grid');
+            if (entries.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 100px 20px; color: #555; border: 1px dashed #222; border-radius: 20px;">Vault is currently empty.</div>';
+                return;
+            }
             grid.innerHTML = entries.map(e => `
                 <div class="vault-card">
-                    <strong>${escapeHtml(e.title)}</strong>
-                    <div style="font-size:12px; color:gray; margin-top:10px;">Encrypted Content</div>
+                    <h4 style="font-size: 19px; font-weight: 600; color: #fff;">${escapeHTML(e.title)}</h4>
+                    <p style="font-size: 12px; color: #555; margin-top: 10px; letter-spacing: 2px;">••••••••••••••••</p>
                 </div>
             `).join('');
-            if (entries.length === 0) {
-                grid.innerHTML = '<p style="color:gray; grid-column: 1/-1; text-align:center;">No entries yet. Tap + to add one.</p>';
-            }
+        }
+
+        function escapeHTML(str) {
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
         }
 
         async function save() {
-            const btn = document.getElementById('save-entry');
-            const title = document.getElementById('entry-title').value;
-            const content = document.getElementById('entry-content').value;
-            
+            const title = document.getElementById('entry-title').value.trim();
+            const content = document.getElementById('entry-content').value.trim();
             if (!title || !content) return;
-            
-            btn.disabled = true;
+
+            const btn = document.getElementById('save-entry');
             btn.textContent = "Encrypting...";
+            btn.disabled = true;
 
             try {
                 const encrypted = await encrypt(content, vaultKey);
-                
-                // Save to Firestore (works offline by default, will sync later)
+                // setDoc works offline and will sync when the client comes back online
                 await setDoc(doc(db, 'users', currentUser.uid, 'vault', Date.now().toString()), {
-                    title, 
-                    content: encrypted, 
-                    updated: Date.now()
+                    title, content: encrypted, ts: Date.now()
                 });
-                
+
                 document.getElementById('add-modal').classList.remove('active');
                 document.getElementById('entry-title').value = '';
                 document.getElementById('entry-content').value = '';
-                showToast("Saved Locally & Syncing...");
+                showSuccess();
             } catch (e) {
-                console.error("Save error:", e);
-                showToast("Error saving entry");
+                console.error("Save failed:", e);
+                alert("Could not save entry. Check your connection.");
             } finally {
+                btn.textContent = "Encrypt & Sync";
                 btn.disabled = false;
-                btn.textContent = "Save Encrypted";
             }
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // --- Init ---
+        // Parallel Init
         onAuthStateChanged(auth, user => {
             currentUser = user;
-            if (user) {
-                console.log("Authenticated as:", user.uid);
-            }
         });
 
-        // Initialize Firebase Auth
         signInAnonymously(auth).catch(err => {
-            console.error("Initial sign-in failed:", err);
-            showToast("Failed to connect to Firebase.");
+            console.warn("Anonymous sign-in failed (offline). Using local-only mode.", err);
         });
 
-        document.getElementById('unlock-btn').onclick = accessVault;
+        document.getElementById('unlock-btn').onclick = unlock;
         document.getElementById('add-fab').onclick = () => document.getElementById('add-modal').classList.add('active');
         document.getElementById('save-entry').onclick = save;
-        document.getElementById('cancel-add').onclick = () => {
-            document.getElementById('add-modal').classList.remove('active');
-        };
+        document.getElementById('cancel-add').onclick = () => document.getElementById('add-modal').classList.remove('active');
         document.getElementById('lock-btn').onclick = () => location.reload();
+        document.getElementById('master-password').onkeydown = (e) => { if(e.key === 'Enter') unlock(); };
     </script>
 </body>
 </html>
